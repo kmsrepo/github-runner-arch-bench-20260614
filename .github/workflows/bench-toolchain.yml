@@ -1,0 +1,47 @@
+name: bench-toolchain
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      builds:
+        description: Number of repeated native compiles
+        required: true
+        default: "20"
+
+permissions:
+  contents: read
+
+jobs:
+  toolchain:
+    name: Toolchain (${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+      - name: System metadata
+        run: |
+          uname -a
+          lscpu
+          python3 --version
+          cc --version
+      - name: Run toolchain benchmark
+        run: |
+          mkdir -p results
+          python3 scripts/bench_toolchain.py \
+            --builds "${{ github.event.inputs.builds || '20' }}" \
+            --output "results/toolchain-${{ matrix.arch }}.json"
+      - name: Upload toolchain result
+        uses: actions/upload-artifact@v4
+        with:
+          name: toolchain-${{ matrix.arch }}
+          path: results/*.json
+          if-no-files-found: error

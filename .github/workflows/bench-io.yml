@@ -1,0 +1,52 @@
+name: bench-io
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      size_mb:
+        description: Temporary file size in MB
+        required: true
+        default: "256"
+      repetitions:
+        description: I/O repetitions
+        required: true
+        default: "3"
+
+permissions:
+  contents: read
+
+jobs:
+  io:
+    name: I/O (${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+      - name: System metadata
+        run: |
+          uname -a
+          lscpu
+          df -h
+          python3 --version
+      - name: Run I/O benchmark
+        run: |
+          mkdir -p results
+          python3 scripts/bench_io.py \
+            --size-mb "${{ github.event.inputs.size_mb || '256' }}" \
+            --repetitions "${{ github.event.inputs.repetitions || '3' }}" \
+            --output "results/io-${{ matrix.arch }}.json"
+      - name: Upload I/O result
+        uses: actions/upload-artifact@v4
+        with:
+          name: io-${{ matrix.arch }}
+          path: results/*.json
+          if-no-files-found: error

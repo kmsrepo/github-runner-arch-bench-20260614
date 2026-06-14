@@ -1,0 +1,50 @@
+name: bench-cpu
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      repetitions:
+        description: Work multiplier for CPU benchmarks
+        required: true
+        default: "3"
+
+permissions:
+  contents: read
+
+jobs:
+  cpu:
+    name: CPU (${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+      - name: System metadata
+        run: |
+          uname -a
+          lscpu
+          python3 --version
+          cc --version
+      - name: Build native benchmark
+        run: |
+          mkdir -p build results
+          cc -O3 -pthread src/cpu_bench.c -o build/cpu_bench
+      - name: Run CPU benchmark
+        run: |
+          python3 scripts/bench_cpu.py \
+            --repetitions "${{ github.event.inputs.repetitions || '3' }}" \
+            --output "results/cpu-${{ matrix.arch }}.json"
+      - name: Upload CPU result
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpu-${{ matrix.arch }}
+          path: results/*.json
+          if-no-files-found: error
