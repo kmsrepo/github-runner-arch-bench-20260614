@@ -26,7 +26,7 @@ jobs:
           - arch: arm64
             runner: ubuntu-24.04-arm
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6.0.3
       - name: System metadata
         run: |
           uname -a
@@ -43,7 +43,7 @@ jobs:
             --repetitions "${{ github.event.inputs.repetitions || '3' }}" \
             --output "results/cpu-${{ matrix.arch }}.json"
       - name: Upload CPU result
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: cpu-${{ matrix.arch }}
           path: results/*.json
