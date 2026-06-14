@@ -66,3 +66,5 @@ sustained_simd_kernel:
 .Lzero_iterations:
     mov x0, x1
     ret
+
+.section .note.GNU-stack,"",%progbits

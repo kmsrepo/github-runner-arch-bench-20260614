@@ -12,7 +12,8 @@ sustained_simd_kernel:
     je .Lzero_iterations
 
     vmovdqa .Llane_offsets(%rip), %ymm5
-    vpbroadcastq %rsi, %ymm0
+    vmovq %rsi, %xmm0
+    vpbroadcastq %xmm0, %ymm0
     vpaddq %ymm5, %ymm0, %ymm0
     vmovdqa .Ladd_constants(%rip), %ymm1
     vmovdqa .Lmix_constants(%rip), %ymm2
@@ -55,3 +56,5 @@ sustained_simd_kernel:
 .Lxor_constants:
     .quad 0x1d8e4e27c47d124f, 0xeb44accab455d165
     .quad 0x6b05c2d7b3eade77, 0xa4093822299f31d0
+
+.section .note.GNU-stack,"",@progbits
