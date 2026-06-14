@@ -1,0 +1,55 @@
+name: bench-sustained-c
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      seconds:
+        description: Sustained benchmark duration in seconds
+        required: true
+        default: "60"
+      threads:
+        description: Worker threads
+        required: true
+        default: "4"
+
+permissions:
+  contents: read
+
+jobs:
+  sustained-c:
+    name: Sustained C (${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v6.0.3
+      - name: System metadata
+        run: |
+          uname -a
+          lscpu
+          python3 --version
+          cc --version
+      - name: Build sustained C benchmark
+        run: |
+          mkdir -p build results
+          cc -O3 -march=native -pthread src/sustained_c_bench.c -lm -o build/sustained_c_bench
+      - name: Run sustained C benchmark
+        run: |
+          python3 scripts/bench_sustained_c.py \
+            --seconds "${{ github.event.inputs.seconds || '60' }}" \
+            --threads "${{ github.event.inputs.threads || '4' }}" \
+            --output "results/sustained-c-${{ matrix.arch }}.json"
+      - name: Upload sustained C result
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: sustained-c-${{ matrix.arch }}
+          path: results/*.json
+          if-no-files-found: error
