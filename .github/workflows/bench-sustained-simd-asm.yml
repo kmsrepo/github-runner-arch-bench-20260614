@@ -1,0 +1,71 @@
+name: bench-sustained-simd-asm
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      seconds:
+        description: Sustained benchmark duration in seconds
+        required: true
+        default: "60"
+      threads:
+        description: Worker threads
+        required: true
+        default: "4"
+      block_iterations:
+        description: Inner SIMD loop iterations per time-check block
+        required: true
+        default: "1000000"
+
+permissions:
+  contents: read
+
+jobs:
+  sustained-simd-asm:
+    name: Sustained SIMD asm (${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v6.0.3
+      - name: System metadata
+        run: |
+          uname -a
+          lscpu
+          python3 --version
+          cc --version
+      - name: Build sustained SIMD assembly benchmark
+        run: |
+          mkdir -p build results
+          case "$(uname -m)" in
+            x86_64)
+              cc -O3 -pthread src/sustained_simd_asm_bench.c src/sustained_avx2.S -o build/sustained_simd_asm_bench
+              ;;
+            aarch64)
+              cc -O3 -pthread -march=armv8.2-a+sve src/sustained_simd_asm_bench.c src/sustained_sve.S -o build/sustained_simd_asm_bench
+              ;;
+            *)
+              echo "unsupported architecture: $(uname -m)" >&2
+              exit 2
+              ;;
+          esac
+      - name: Run sustained SIMD assembly benchmark
+        run: |
+          python3 scripts/bench_sustained_simd_asm.py \
+            --seconds "${{ github.event.inputs.seconds || '60' }}" \
+            --threads "${{ github.event.inputs.threads || '4' }}" \
+            --block-iterations "${{ github.event.inputs.block_iterations || '1000000' }}" \
+            --output "results/sustained-simd-asm-${{ matrix.arch }}.json"
+      - name: Upload sustained SIMD assembly result
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: sustained-simd-asm-${{ matrix.arch }}
+          path: results/*.json
+          if-no-files-found: error

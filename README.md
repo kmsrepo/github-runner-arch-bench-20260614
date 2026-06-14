@@ -16,6 +16,7 @@ Both labels are standard GitHub-hosted public repository runners. The workflows 
 - `bench-toolchain.yml`: repeated native C compile timing and binary run timing.
 - `bench-asm.yml`: architecture-specific optimized assembly kernels using x86_64 SSE2 and AArch64 NEON.
 - `bench-sustained-c.yml`: about one minute of sustained optimized C mixed integer and floating-point calculation.
+- `bench-sustained-simd-asm.yml`: about one minute of sustained architecture-specific SIMD assembly using x86_64 AVX2 and AArch64 SVE.
 
 ## Run With gh
 
@@ -23,6 +24,7 @@ Both labels are standard GitHub-hosted public repository runners. The workflows 
 gh workflow run bench-cpu.yml --field repetitions=3
 gh workflow run bench-asm.yml --field repetitions=3
 gh workflow run bench-sustained-c.yml --field seconds=60 --field threads=4
+gh workflow run bench-sustained-simd-asm.yml --field seconds=60 --field threads=4 --field block_iterations=1000000
 gh workflow run bench-io.yml --field size_mb=256 --field repetitions=3
 gh workflow run bench-toolchain.yml --field builds=20
 ```
