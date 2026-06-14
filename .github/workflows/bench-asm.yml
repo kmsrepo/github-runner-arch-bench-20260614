@@ -1,0 +1,61 @@
+name: bench-asm
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      repetitions:
+        description: Work multiplier for assembly benchmarks
+        required: true
+        default: "3"
+
+permissions:
+  contents: read
+
+jobs:
+  asm:
+    name: Assembly SIMD (${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v6.0.3
+      - name: System metadata
+        run: |
+          uname -a
+          lscpu
+          python3 --version
+          cc --version
+      - name: Build native assembly benchmark
+        run: |
+          mkdir -p build results
+          case "$(uname -m)" in
+            x86_64)
+              cc -O3 -pthread src/asm_bench.c src/asm_x86_64.S -o build/asm_bench
+              ;;
+            aarch64)
+              cc -O3 -pthread src/asm_bench.c src/asm_aarch64.S -o build/asm_bench
+              ;;
+            *)
+              echo "unsupported architecture: $(uname -m)" >&2
+              exit 2
+              ;;
+          esac
+      - name: Run assembly benchmark
+        run: |
+          python3 scripts/bench_asm.py \
+            --repetitions "${{ github.event.inputs.repetitions || '3' }}" \
+            --output "results/asm-${{ matrix.arch }}.json"
+      - name: Upload assembly result
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: asm-${{ matrix.arch }}
+          path: results/*.json
+          if-no-files-found: error

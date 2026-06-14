@@ -14,11 +14,13 @@ Both labels are standard GitHub-hosted public repository runners. The workflows 
 - `bench-cpu.yml`: native C integer workload, Python CPU workload, and startup metadata.
 - `bench-io.yml`: file write, read, and random-read checks against runner temp storage.
 - `bench-toolchain.yml`: repeated native C compile timing and binary run timing.
+- `bench-asm.yml`: architecture-specific optimized assembly kernels using x86_64 SSE2 and AArch64 NEON.
 
 ## Run With gh
 
 ```sh
 gh workflow run bench-cpu.yml --field repetitions=3
+gh workflow run bench-asm.yml --field repetitions=3
 gh workflow run bench-io.yml --field size_mb=256 --field repetitions=3
 gh workflow run bench-toolchain.yml --field builds=20
 ```
